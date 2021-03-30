@@ -49,10 +49,10 @@ func main() {
 	go func() {
 		<-quit
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
 		err := srv.Shutdown(ctx)
 		// do something
 		done <- err
+		cancel()
 	}()
 
 	log.Printf("starting server %s", path)
