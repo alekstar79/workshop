@@ -3,8 +3,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -31,7 +36,28 @@ func main() {
 
 	path := cfg.Host + ":" + cfg.Port
 
+	srv := &http.Server{
+		Addr:    path,
+		Handler: r,
+	}
+
+	// handle shutdown gracefully
+	quit := make(chan os.Signal, 1)
+	done := make(chan error, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		err := srv.Shutdown(ctx)
+		// do something
+		done <- err
+	}()
+
 	log.Printf("starting server %s", path)
-	log.Fatal(http.ListenAndServe(path, r))
-	log.Print("shutting down")
+	_ = srv.ListenAndServe()
+
+	err = <-done
+	log.Printf("server shutdown with %v", err)
 }

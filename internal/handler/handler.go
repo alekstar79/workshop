@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	
 	"workshop/internal/api"
 )
 
@@ -20,8 +19,12 @@ func NewHandler(jokeClient api.Client, customJoke string) *Handler {
 }
 
 func (h *Handler) Hello(w http.ResponseWriter, r *http.Request) {
-	joke, err := h.jokeClient.GetJoke()
+	if h.customJoke != "" {
+		fmt.Fprint(w, h.customJoke)
+		return
+	}
 
+	joke, err := h.jokeClient.GetJoke()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
